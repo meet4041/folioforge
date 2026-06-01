@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated site output
+generated_portfolio/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+
