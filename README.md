@@ -37,6 +37,28 @@ Or run it without arguments and enter a path when prompted:
 python script.py
 ```
 
+## How To Use
+
+1. Put your resume PDF in the project folder, or note the full path to the file.
+2. Open a terminal in this folder.
+3. Install the dependency with `pip install pymupdf` if you have not already.
+4. Run `python script.py <your-pdf-file.pdf>`.
+5. If you want, you can also run `python script.py` and type the PDF path when prompted.
+6. Wait for the generator to finish.
+7. Open `generated_portfolio/index.html` in a browser.
+8. Browse the pages and check whether the extracted content looks correct.
+9. If needed, replace the PDF with a different one and run the script again.
+
+## For Other Users
+
+If someone else wants to use this project:
+
+- They only need Python installed
+- They should install `pymupdf`
+- They can use any resume PDF they want
+- The script will generate a fresh portfolio from that PDF
+- The output can be shared or deployed as a static site
+
 ## Output
 
 The generated site is written to:
@@ -68,4 +90,3 @@ Meet_Gandhi.pdf
 ## License
 
 This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
-
