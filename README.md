@@ -37,6 +37,24 @@ Or run it without arguments and enter a path when prompted:
 python script.py
 ```
 
+## Web Upload Page
+
+You can also run a single local frontend page that asks for a PDF upload and generates the portfolio automatically.
+
+Start the web app:
+
+```bash
+python web_app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000
+```
+
+Upload any resume PDF and the app redirects you to the generated portfolio.
+
 ## How To Use
 
 1. Put your resume PDF in the project folder, or note the full path to the file.
@@ -81,6 +99,7 @@ Open `generated_portfolio/index.html` in your browser to preview the site.
 
 ```text
 script.py
+web_app.py
 resume_parser.py
 portfolio_renderer.py
 generated_portfolio/

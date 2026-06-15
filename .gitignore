@@ -12,9 +12,9 @@ env/
 
 # Generated site output
 generated_portfolio/
+uploaded_resumes/
 
 # OS / editor noise
 .DS_Store
 Thumbs.db
 .vscode/
-

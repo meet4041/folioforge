@@ -31,6 +31,22 @@ def bullets(items: list[str]) -> str:
     return "".join(f"<li>{escape(item)}</li>" for item in items if item)
 
 
+def has_items(items: list[str]) -> bool:
+    return any(item.strip() for item in items if item)
+
+
+def has_responsibility(data: dict) -> bool:
+    responsibility = data["responsibility"]
+    return any(
+        [
+            responsibility.get("title", "").strip(),
+            responsibility.get("period", "").strip(),
+            responsibility.get("org", "").strip(),
+            has_items(responsibility.get("bullets", [])),
+        ]
+    )
+
+
 def nav(active: str, name: str) -> str:
     links = []
     for label, href in NAV_ITEMS:
@@ -47,7 +63,30 @@ def nav(active: str, name: str) -> str:
     """
 
 
-def footer(name: str) -> str:
+def link_label(href: str) -> str:
+    cleaned = re.sub(r"^https?://", "", href, flags=re.I).strip("/")
+    if cleaned.lower().startswith("www."):
+        cleaned = cleaned[4:]
+    domain = cleaned.split("/", 1)[0].lower()
+    if "linkedin.com" in domain:
+        return "in"
+    if "github.com" in domain:
+        return "gh"
+    return domain
+
+
+def footer(data: dict) -> str:
+    name = data["name"]
+    links = []
+    email = data.get("email", "")
+    if email:
+        links.append(f'<a href="mailto:{escape(email)}" aria-label="Email" title="{escape(email)}">@</a>')
+
+    for href in data.get("links", []):
+        links.append(
+            f'<a href="{escape(href)}" aria-label="{escape(href)}" title="{escape(href)}" target="_blank" rel="noreferrer">{escape(link_label(href))}</a>'
+        )
+
     return f"""
         <footer class="site-footer">
             <div>
@@ -55,20 +94,14 @@ def footer(name: str) -> str:
             </div>
             <div class="footer-meta">
                 <div class="footer-contact">
-                    <a href="mailto:meetgandhi4041@gmail.com" aria-label="Email" title="Email">@</a>
-                    <a href="https://linkedin.com/in/meet4041" aria-label="LinkedIn" title="LinkedIn">in</a>
-                    <a href="https://github.com/meet4041" aria-label="GitHub" title="GitHub" class="github-link">
-                        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="github-mark">
-                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2 .37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.58.82-2.14-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.14 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-                        </svg>
-                    </a>
+                    {''.join(links)}
                 </div>
             </div>
         </footer>
     """
 
 
-def page_shell(title: str, active: str, name: str, content: str) -> str:
+def page_shell(title: str, active: str, data: dict, content: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,9 +113,9 @@ def page_shell(title: str, active: str, name: str, content: str) -> str:
 <body>
     <div class="page-bg"></div>
     <div class="shell">
-        {nav(active, name)}
+        {nav(active, data["name"])}
         {content}
-        {footer(name)}
+        {footer(data)}
     </div>
 </body>
 </html>
@@ -92,6 +125,7 @@ def page_shell(title: str, active: str, name: str, content: str) -> str:
 def render_education_cards(data: dict) -> str:
     cards = []
     for item in data["education"]:
+        location_tag = f'<span class="tag">{escape(item["location"])}</span>' if item["location"] else ""
         cards.append(
             f"""
             <article class="card timeline-card">
@@ -100,7 +134,7 @@ def render_education_cards(data: dict) -> str:
                         <p class="eyebrow">{escape(item['period'])}</p>
                         <h3>{escape(item['school'])}</h3>
                     </div>
-                    <span class="tag">{escape(item['location'])}</span>
+                    {location_tag}
                 </div>
                 <p class="muted">{escape(item['detail'])}</p>
             </article>
@@ -112,6 +146,7 @@ def render_education_cards(data: dict) -> str:
 def render_experience_cards(data: dict) -> str:
     cards = []
     for item in data["experience"]:
+        location_tag = f'<span class="tag">{escape(item["location"])}</span>' if item["location"] else ""
         cards.append(
             f"""
             <article class="card timeline-card">
@@ -121,7 +156,7 @@ def render_experience_cards(data: dict) -> str:
                         <h3>{escape(item['company'])}</h3>
                         <p class="muted">{escape(item['role'])}</p>
                     </div>
-                    <span class="tag">{escape(item['location'])}</span>
+                    {location_tag}
                 </div>
                 <ul class="bullets">{bullets(item['bullets'])}</ul>
             </article>
@@ -233,7 +268,7 @@ def render_home(data: dict) -> str:
             </div>
         </section>
     """
-    return page_shell(f"{escape(data['name'])} | Portfolio", "index.html", data["name"], content)
+    return page_shell(f"{escape(data['name'])} | Portfolio", "index.html", data, content)
 
 
 def render_about(data: dict) -> str:
@@ -315,7 +350,7 @@ def render_about(data: dict) -> str:
             </div>
         </section>
     """
-    return page_shell(f"About | {escape(data['name'])}", "about.html", data["name"], content)
+    return page_shell(f"About | {escape(data['name'])}", "about.html", data, content)
 
 
 def render_skills(data: dict) -> str:
@@ -335,11 +370,45 @@ def render_skills(data: dict) -> str:
             </div>
         </section>
     """
-    return page_shell(f"Skills | {escape(data['name'])}", "skills.html", data["name"], content)
+    return page_shell(f"Skills | {escape(data['name'])}", "skills.html", data, content)
 
 
 def render_journey(data: dict) -> str:
     responsibility = data["responsibility"]
+    extra_cards = []
+
+    if has_responsibility(data):
+        extra_cards.append(
+            f"""
+                <article class="card journey-panel journey-feature">
+                    <h2>Position of responsibility</h2>
+                    <p class="tagline">{escape(responsibility['title'])} - {escape(responsibility['period'])}</p>
+                    <p class="muted">{escape(responsibility['org'])}</p>
+                    <ul class="bullets">{bullets(responsibility['bullets'])}</ul>
+                </article>
+            """
+        )
+
+    if has_items(data["achievements"]):
+        extra_cards.append(
+            f"""
+                <article class="card journey-panel journey-feature">
+                    <h2>Achievements</h2>
+                    <ul class="bullets">{bullets(data['achievements'])}</ul>
+                </article>
+            """
+        )
+
+    extra_section = ""
+    if extra_cards:
+        extra_section = f"""
+        <section class="section">
+            <div class="journey-grid">
+                {''.join(extra_cards)}
+            </div>
+        </section>
+        """
+
     content = f"""
         <section class="section">
             <div class="section-head">
@@ -356,23 +425,9 @@ def render_journey(data: dict) -> str:
                 </article>
             </div>
         </section>
-
-        <section class="section">
-            <div class="journey-grid">
-                <article class="card journey-panel journey-feature">
-                    <h2>Position of responsibility</h2>
-                    <p class="tagline">{escape(responsibility['title'])} - {escape(responsibility['period'])}</p>
-                    <p class="muted">{escape(responsibility['org'])}</p>
-                    <ul class="bullets">{bullets(responsibility['bullets'])}</ul>
-                </article>
-                <article class="card journey-panel journey-feature">
-                    <h2>Achievements</h2>
-                    <ul class="bullets">{bullets(data['achievements'])}</ul>
-                </article>
-            </div>
-        </section>
+        {extra_section}
     """
-    return page_shell(f"Journey | {escape(data['name'])}", "journey.html", data["name"], content)
+    return page_shell(f"Journey | {escape(data['name'])}", "journey.html", data, content)
 
 
 def render_projects(data: dict) -> str:
@@ -386,7 +441,7 @@ def render_projects(data: dict) -> str:
             </div>
         </section>
     """
-    return page_shell(f"Projects | {escape(data['name'])}", "projects.html", data["name"], content)
+    return page_shell(f"Projects | {escape(data['name'])}", "projects.html", data, content)
 
 
 def render_contact(data: dict) -> str:
@@ -515,7 +570,7 @@ def render_contact(data: dict) -> str:
         }})();
         </script>
     """
-    return page_shell(f"Contact | {escape(data['name'])}", "contact.html", data["name"], content)
+    return page_shell(f"Contact | {escape(data['name'])}", "contact.html", data, content)
 
 
 def create_css() -> str:
@@ -619,6 +674,9 @@ a{color:inherit}
     align-items:stretch;
     padding:36px 0 12px;
 }
+.hero > *{
+    min-width:0;
+}
 .hero h1{
     margin:0;
     font-size:clamp(3rem, 7vw, 5.8rem);
@@ -637,7 +695,7 @@ a{color:inherit}
 }
 .typewriter{
     display:inline-block;
-    white-space:nowrap;
+    max-width:100%;
     opacity:0;
     transform:translateY(6px);
     clip-path:inset(0 100% 0 0);
@@ -646,6 +704,9 @@ a{color:inherit}
 .typewriter span{
     display:inline-block;
     padding-right:0;
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
 }
 .about-title{
     font-size:clamp(2rem, 3.6vw, 3.2rem) !important;
@@ -687,7 +748,7 @@ a{color:inherit}
 }
 .journey-grid{
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-columns:1fr;
     gap:24px;
 }
 .journey-panel{
@@ -914,6 +975,7 @@ a{color:inherit}
 }
 .lede,.muted{
     color:var(--muted);
+    overflow-wrap:anywhere;
 }
 .eyebrow{
     margin:0 0 12px;
@@ -958,6 +1020,7 @@ a{color:inherit}
     backdrop-filter:blur(16px);
     border-radius:24px;
     box-shadow:var(--shadow);
+    min-width:0;
 }
 .hero-card{
     padding:24px;
@@ -1156,6 +1219,7 @@ a{color:inherit}
     justify-content:space-between;
     gap:16px;
     align-items:flex-start;
+    flex-wrap:wrap;
 }
 .tag,.pill{
     display:inline-flex;
@@ -1166,11 +1230,15 @@ a{color:inherit}
     color:#7dd3fc;
     padding:6px 10px;
     font-size:.82rem;
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
 }
 .tagline{
     margin:0 0 14px;
     color:#7dd3fc;
     font-weight:600;
+    overflow-wrap:anywhere;
 }
 .bullets{
     margin:14px 0 0;
@@ -1178,6 +1246,9 @@ a{color:inherit}
     color:rgba(246,239,231,.82);
 }
 .bullets li + li{margin-top:8px}
+.bullets li{
+    overflow-wrap:anywhere;
+}
 .timeline-card + .timeline-card{
     margin-top:18px;
 }
@@ -1266,6 +1337,10 @@ a{color:inherit}
     .hero,.grid-2,.grid-3{
         grid-template-columns:1fr;
     }
+    .profile-points,
+    .mini-metrics{
+        grid-template-columns:1fr;
+    }
     .quick-links-grid{
         grid-template-columns:1fr;
     }
@@ -1287,6 +1362,49 @@ a{color:inherit}
     }
     .footer-contact{
         justify-content:flex-start;
+    }
+}
+@media (max-width: 640px){
+    .shell{
+        width:min(100% - 20px, 1160px);
+    }
+    .hero{
+        gap:18px;
+        padding-top:24px;
+    }
+    .hero h1,
+    .page-title,
+    .about-title{
+        line-height:1.02;
+    }
+    .typewriter{
+        display:block;
+        clip-path:none;
+    }
+    .typewriter span{
+        display:block;
+    }
+    .card,
+    .hero-card,
+    .timeline-card{
+        padding:18px;
+    }
+    .timeline-card::before{
+        left:18px;
+        top:18px;
+    }
+    .timeline-card .card-head,
+    .timeline-card .muted,
+    .timeline-card .bullets{
+        padding-left:22px;
+    }
+    .hero-strip{
+        flex-direction:column;
+        gap:8px;
+    }
+    .hero-strip span + span::before{
+        content:none;
+        margin-right:0;
     }
 }
 @keyframes titleReveal{

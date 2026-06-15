@@ -6,6 +6,7 @@ import fitz
 
 SECTION_ALIASES = {
     "about": ["about"],
+    "summary": ["summary"],
     "education": ["education"],
     "experience": ["experience"],
     "skills": ["skills", "technical skills"],
@@ -21,6 +22,11 @@ def normalize_text(text: str) -> str:
     normalized = unicodedata.normalize("NFKC", text)
     normalized = normalized.replace("\r", "\n")
     normalized = normalized.replace("\u00a0", " ")
+    normalized = normalized.replace("\ufffd", "-")
+    normalized = normalized.replace("•", "-")
+    normalized = normalized.replace("‣", "-")
+    normalized = normalized.replace("∙", "-")
+    normalized = normalized.replace("·", "-")
     normalized = normalized.replace("â€¢", "- ")
     normalized = normalized.replace("Â·", "- ")
     normalized = normalized.replace("Â§", "")
@@ -74,12 +80,16 @@ def looks_like_email(line: str) -> bool:
 
 
 def looks_like_url(line: str) -> bool:
-    return "http://" in line or "https://" in line or "linkedin.com" in line or "github.com" in line
+    return bool(re.search(r"(https?://|www\.)\S+", line)) or "linkedin.com" in line or "github.com" in line
 
 
 def looks_like_date(line: str) -> bool:
     lowered = line.lower()
     if "present" in lowered:
+        return True
+    if re.fullmatch(r"\d{4}", line.strip()):
+        return True
+    if re.search(r"\b\d{4}\s*[-–—]\s*(?:present|\d{4})\b", lowered):
         return True
     if re.search(r"\b\d{4}\b", line) and ("-" in line or "to" in lowered):
         return True
@@ -89,7 +99,7 @@ def looks_like_date(line: str) -> bool:
 
 
 def looks_like_bullet(line: str) -> bool:
-    return line.startswith(("-", "*"))
+    return line.startswith(("-", "*", "•", "‣", "∙", "·"))
 
 
 def strip_bullet(line: str) -> str:
@@ -99,6 +109,7 @@ def strip_bullet(line: str) -> str:
 def split_sections(lines: list[str]) -> dict[str, list[str]]:
     sections = {
         "intro": [],
+        "summary": [],
         "education": [],
         "experience": [],
         "skills": [],
@@ -139,25 +150,50 @@ def extract_contacts(lines: list[str]) -> dict[str, str]:
     email = ""
     linkedin = ""
     github = ""
-    urls = []
     for line in lines:
         if not email:
             match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", line)
             if match:
                 email = match.group(0)
-        if looks_like_url(line):
-            urls.append(line.strip())
-    for url in urls:
-        cleaned = url.lstrip(" -#@|Ã¯").rstrip(").,;]")
-        if "linkedin.com" in cleaned and not linkedin:
-            linkedin = cleaned if cleaned.startswith("http") else f"https://{cleaned}"
-        elif "github.com" in cleaned and not github:
-            github = cleaned if cleaned.startswith("http") else f"https://{cleaned}"
+        if not linkedin:
+            linkedin_match = re.search(r"((?:https?://)?(?:www\.)?linkedin\.com/[^\s|),;]+)", line, re.I)
+            if linkedin_match:
+                linkedin = linkedin_match.group(1)
+                if not linkedin.startswith("http"):
+                    linkedin = f"https://{linkedin}"
+        if not github:
+            github_match = re.search(r"((?:https?://)?(?:www\.)?github\.com/[^\s|),;]+)", line, re.I)
+            if github_match:
+                github = github_match.group(1)
+                if not github.startswith("http"):
+                    github = f"https://{github}"
     return {
         "email": email,
         "linkedin": linkedin,
         "github": github,
     }
+
+
+def extract_links(lines: list[str]) -> list[str]:
+    links: list[str] = []
+    seen: set[str] = set()
+    pattern = re.compile(r"((?:https?://)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s|),;]*)?)", re.I)
+    for line in lines:
+        for match in pattern.finditer(line):
+            candidate = match.group(1).strip().rstrip(".,)")
+            if "@" in candidate:
+                continue
+            bare_candidate = re.sub(r"^https?://", "", candidate, flags=re.I)
+            bare_candidate = re.sub(r"^www\.", "", bare_candidate, flags=re.I)
+            if f"@{bare_candidate.lower()}" in line.lower():
+                continue
+            normalized = candidate if candidate.startswith(("http://", "https://")) else f"https://{candidate}"
+            key = normalized.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            links.append(normalized)
+    return links
 
 
 def collect_bullets(lines: list[str]) -> tuple[list[str], list[str]]:
@@ -183,21 +219,41 @@ def collect_bullets(lines: list[str]) -> tuple[list[str], list[str]]:
 
 
 def parse_skills(lines: list[str]) -> dict[str, list[str]]:
-    skills = {}
+    skills: dict[str, list[str]] = {}
     current_key = ""
+    current_values: list[str] = []
+
+    def flush_current() -> None:
+        nonlocal current_key, current_values
+        if current_key and current_values:
+            joined = " ".join(current_values)
+            items = [item.strip() for item in joined.split(",") if item.strip()]
+            if items:
+                skills[current_key] = items
+        current_key = ""
+        current_values = []
+
     for line in lines:
-        if ":" in line:
-            key, raw_values = line.split(":", 1)
-            key = key.strip()
-            values = [item.strip() for item in raw_values.split(",") if item.strip()]
-            if values:
-                skills[key] = values
-                current_key = key
-            else:
-                current_key = ""
-        elif current_key:
-            extra_values = [item.strip() for item in line.split(",") if item.strip()]
-            skills.setdefault(current_key, []).extend(extra_values)
+        if not line or is_heading(line) or looks_like_date(line):
+            continue
+
+        is_label = (
+            ":" not in line
+            and "," not in line
+            and not looks_like_bullet(line)
+            and len(line) <= 40
+            and not looks_like_url(line)
+        )
+
+        if is_label:
+            flush_current()
+            current_key = line.strip()
+            continue
+
+        if current_key:
+            current_values.append(line.strip())
+
+    flush_current()
     return skills
 
 
@@ -312,6 +368,7 @@ def parse_resume(pdf_path: Path) -> dict:
     name = first_non_contact(lines)
     title = detect_title(lines, name)
     contacts = extract_contacts(lines)
+    links = extract_links(lines)
 
     data = {
         "source": pdf_path,
@@ -320,6 +377,7 @@ def parse_resume(pdf_path: Path) -> dict:
         "email": contacts["email"],
         "linkedin": contacts["linkedin"],
         "github": contacts["github"],
+        "links": links,
         "summary": "",
         "education": parse_education(sections["education"]),
         "experience": parse_experience(sections["experience"]),
