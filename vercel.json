@@ -4,6 +4,18 @@
     {
       "source": "/",
       "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/styles.css",
+      "destination": "/frontend/styles.css"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/frontend/app.js"
+    },
+    {
+      "source": "/config.js",
+      "destination": "/frontend/config.js"
     }
   ]
 }
