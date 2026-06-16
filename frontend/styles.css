@@ -204,9 +204,12 @@ button:disabled{
     display:grid;
     place-items:center;
     padding:24px;
-    background:rgba(12,24,20,.26);
+    background:
+        radial-gradient(circle at top, rgba(141,201,186,.16), transparent 30%),
+        rgba(12,24,20,.30);
     backdrop-filter:blur(12px);
     z-index:30;
+    animation:overlayFade .24s ease;
 }
 
 .result-overlay[hidden]{
@@ -217,20 +220,39 @@ button:disabled{
     position:relative;
     width:min(560px, 100%);
     margin-top:0;
-    padding:24px 22px 22px;
+    padding:30px 24px 24px;
     background:
-        linear-gradient(145deg, rgba(255,255,255,.98), rgba(244,250,247,.94)),
+        linear-gradient(160deg, rgba(255,255,255,.98), rgba(243,251,247,.94) 58%, rgba(255,250,239,.92)),
         rgba(255,255,255,.92);
     border:1px solid rgba(27,127,105,.14);
-    box-shadow:0 18px 40px rgba(19,92,76,.10);
+    box-shadow:
+        0 24px 60px rgba(19,92,76,.18),
+        inset 0 1px 0 rgba(255,255,255,.72);
+    overflow:hidden;
+    animation:cardRise .34s cubic-bezier(.2,.8,.2,1);
+}
+
+.result-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at top left, rgba(141,201,186,.18), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(197,161,87,.14), transparent 24%);
+    pointer-events:none;
+}
+
+.result-card > *{
+    position:relative;
+    z-index:1;
 }
 
 .result-close{
     position:absolute;
-    top:12px;
-    right:12px;
-    width:36px;
-    min-height:36px;
+    top:14px;
+    right:14px;
+    width:40px;
+    min-height:40px;
     border-radius:999px;
     border:1px solid rgba(27,127,105,.14);
     background:rgba(255,255,255,.9);
@@ -239,35 +261,82 @@ button:disabled{
     font-size:1.2rem;
     line-height:1;
     padding:0;
+    transition:transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.result-close:hover{
+    transform:rotate(90deg);
+    background:#fff;
+    border-color:rgba(27,127,105,.28);
+}
+
+.result-badge{
+    width:78px;
+    height:78px;
+    margin:0 auto 18px;
+    position:relative;
+    display:grid;
+    place-items:center;
+}
+
+.result-badge-ring,
+.result-badge-core{
+    position:absolute;
+    border-radius:999px;
+}
+
+.result-badge-ring{
+    inset:0;
+    background:conic-gradient(from 180deg, rgba(27,127,105,.08), rgba(27,127,105,.34), rgba(197,161,87,.20), rgba(27,127,105,.08));
+    animation:badgeSpin 8s linear infinite;
+}
+
+.result-badge-core{
+    inset:10px;
+    background:linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    box-shadow:0 14px 28px rgba(19,92,76,.22);
+}
+
+.result-badge-check{
+    position:relative;
+    z-index:1;
+    color:#fff;
+    font-size:1.7rem;
+    font-weight:700;
 }
 
 .result-kicker{
-    margin:0 0 8px;
+    margin:0 0 10px;
     text-transform:uppercase;
     letter-spacing:.2em;
     font-size:.76rem;
     font-weight:700;
     color:var(--accent);
+    text-align:center;
 }
 
 .result-card h3{
     margin:0 0 10px;
     font-family:Georgia,"Times New Roman",serif;
-    font-size:clamp(1.5rem, 4vw, 2.2rem);
-    line-height:1.05;
+    font-size:clamp(1.65rem, 4vw, 2.45rem);
+    line-height:1.02;
     color:var(--text);
+    text-align:center;
 }
 
 .result-copy{
-    margin:0 0 16px;
+    margin:0 auto 18px;
+    max-width:42ch;
     color:var(--muted);
     line-height:1.6;
+    text-align:center;
 }
 
 .result-actions{
     display:flex;
     gap:12px;
     flex-wrap:wrap;
+    justify-content:center;
 }
 
 .result-action{
@@ -281,6 +350,7 @@ button:disabled{
     font-weight:700;
     text-decoration:none;
     cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 
 .result-action.primary{
@@ -296,14 +366,48 @@ button:disabled{
     box-shadow:none;
 }
 
+.result-action:hover{
+    transform:translateY(-2px);
+}
+
 .copy-feedback{
-    margin:14px 0 0;
+    margin:16px 0 0;
     color:var(--accent-strong);
     font-weight:600;
+    text-align:center;
 }
 
 body.has-result-overlay{
     overflow:hidden;
+}
+
+@keyframes overlayFade{
+    from{
+        opacity:0;
+    }
+    to{
+        opacity:1;
+    }
+}
+
+@keyframes cardRise{
+    from{
+        opacity:0;
+        transform:translateY(18px) scale(.96);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
+
+@keyframes badgeSpin{
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
 }
 
 @media (max-width: 640px){
@@ -314,5 +418,9 @@ body.has-result-overlay{
     .hero-card{
         padding:24px 18px;
         border-radius:24px;
+    }
+
+    .result-card{
+        padding:26px 18px 20px;
     }
 }

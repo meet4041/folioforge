@@ -39,7 +39,12 @@
     </main>
     <div id="result-overlay" class="result-overlay" hidden>
         <div id="result" class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-            <button type="button" id="result-close" class="result-close" aria-label="Close success card">×</button>
+            <button type="button" id="result-close" class="result-close" aria-label="Close success card">&times;</button>
+            <div class="result-badge" aria-hidden="true">
+                <span class="result-badge-ring"></span>
+                <span class="result-badge-core"></span>
+                <span class="result-badge-check">&#10003;</span>
+            </div>
             <p class="result-kicker">Congratulations</p>
             <h3 id="result-title">Your portfolio website is ready.</h3>
             <p class="result-copy">Your generated site link is below. Open it or copy it and share it anywhere.</p>
