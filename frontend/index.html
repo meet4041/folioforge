@@ -4,12 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FolioForge</title>
+    <script src="/config.js"></script>
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <main class="page-shell">
         <section class="hero-card">
-            <img src="/logo.png" alt="FolioForge logo" class="brand-logo">
+            <img
+                src="/logo.png"
+                alt="FolioForge logo"
+                class="brand-logo"
+                onerror="this.onerror=null; this.src=(window.FOLIOFORGE_API_BASE || '').replace(/\/+$/, '') + '/logo.png';"
+            >
             <p class="eyebrow">Resume To Portfolio</p>
             <h1>Upload a CV and launch a personal website in minutes.</h1>
             <p class="lead">
@@ -33,8 +39,6 @@
             </div>
         </section>
     </main>
-
-    <script src="/config.js"></script>
     <script src="/app.js"></script>
 </body>
 </html>
