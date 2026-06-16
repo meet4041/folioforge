@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FolioForge</title>
+    <link rel="stylesheet" href="/frontend/styles.css">
+</head>
+<body>
+    <main class="page-shell">
+        <section class="hero-card">
+            <img src="/logo.png" alt="FolioForge logo" class="brand-logo">
+            <p class="eyebrow">Resume To Portfolio</p>
+            <h1>Upload a CV and launch a personal website in minutes.</h1>
+            <p class="lead">
+                FolioForge turns a PDF resume into a polished multi-page portfolio that users can open and share instantly.
+            </p>
+
+            <form id="upload-form" class="upload-card">
+                <label class="dropzone" for="resume">
+                    <span class="dropzone-title">Choose a PDF resume</span>
+                    <span class="dropzone-copy">One upload, one generated portfolio, ready to open in a new tab.</span>
+                    <span class="dropzone-file" id="file-name">No file selected</span>
+                </label>
+                <input id="resume" name="resume" type="file" accept=".pdf,application/pdf" required>
+                <button type="submit" id="submit-button">Generate Portfolio</button>
+            </form>
+
+            <div id="status" class="status" hidden></div>
+            <div id="result" class="result" hidden>
+                <p>Your portfolio is ready.</p>
+                <a id="portfolio-link" href="#" target="_blank" rel="noreferrer">Open Portfolio</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="/frontend/config.js"></script>
+    <script src="/frontend/app.js"></script>
+</body>
+</html>

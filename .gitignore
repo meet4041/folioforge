@@ -13,6 +13,7 @@ env/
 # Generated site output
 generated_portfolio/
 uploaded_resumes/
+storage/
 
 # OS / editor noise
 .DS_Store

@@ -1,110 +1,141 @@
 # FolioForge
 
-FolioForge is a PDF-to-portfolio generator that turns a resume PDF into a polished, multi-page portfolio site.
+FolioForge is a PDF-to-portfolio generator that turns a resume PDF into a polished, multi-page portfolio site. The repo now supports:
 
-## What it does
+- command-line generation for local use
+- a production-ready Python API backend for Render
+- a static upload frontend for Vercel
 
-- Reads resume content from one or more PDF files
-- Extracts sections like About, Skills, Journey, Projects, and Contact
-- Generates a responsive portfolio in `generated_portfolio/`
-- Supports multiple PDFs from the command line
+## Architecture
 
-## Tech Stack
+- `script.py`: local CLI generator
+- `web_app.py`: Flask API backend for uploads and generated portfolio hosting
+- `frontend/`: static frontend that uploads PDFs to the backend
+- `portfolio_renderer.py`: multi-page portfolio generator
+- `resume_parser.py`: PDF parsing and section extraction
 
-- Python
-- PyMuPDF (`fitz`)
-- HTML
-- CSS
-- Vanilla JavaScript
+## Requirements
 
-## Run it
-
-Install the dependency:
+Install backend dependencies:
 
 ```bash
-pip install pymupdf
+pip install -r requirements.txt
 ```
 
-Generate a portfolio from a PDF:
+## Local Development
+
+Generate a portfolio from a PDF with the CLI:
 
 ```bash
-python script.py Meet_Gandhi.pdf
+python script.py path-to-resume.pdf
 ```
 
-Or run it without arguments and enter a path when prompted:
-
-```bash
-python script.py
-```
-
-## Web Upload Page
-
-You can also run a single local frontend page that asks for a PDF upload and generates the portfolio automatically.
-
-Start the web app:
+Run the backend locally:
 
 ```bash
 python web_app.py
 ```
 
-Then open:
+The API will start on:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-Upload any resume PDF and the app redirects you to the generated portfolio.
-
-## How To Use
-
-1. Put your resume PDF in the project folder, or note the full path to the file.
-2. Open a terminal in this folder.
-3. Install the dependency with `pip install pymupdf` if you have not already.
-4. Run `python script.py <your-pdf-file.pdf>`.
-5. If you want, you can also run `python script.py` and type the PDF path when prompted.
-6. Wait for the generator to finish.
-7. Open `generated_portfolio/index.html` in a browser.
-8. Browse the pages and check whether the extracted content looks correct.
-9. If needed, replace the PDF with a different one and run the script again.
-
-## For Other Users
-
-If someone else wants to use this project:
-
-- They only need Python installed
-- They should install `pymupdf`
-- They can use any resume PDF they want
-- The script will generate a fresh portfolio from that PDF
-- The output can be shared or deployed as a static site
-
-## Output
-
-The generated site is written to:
+Open the frontend by serving the repo statically, or open:
 
 ```text
-generated_portfolio/
+frontend/index.html
 ```
 
-Open `generated_portfolio/index.html` in your browser to preview the site.
+The frontend uses `frontend/config.js`, which defaults to `http://127.0.0.1:8000`.
 
-## Features
+## Backend API
 
-- Elegant, classic UI
-- Dark-themed layout
-- Animated page headings
-- Contact form with validation
-- Resume-driven content generation
+### `GET /api/health`
 
-## Project Structure
+Returns API health status.
+
+### `POST /api/generate`
+
+Upload a PDF in multipart form-data using the `resume` field.
+
+Successful response:
+
+```json
+{
+  "job_id": "generated-id",
+  "portfolio_url": "https://your-render-service.onrender.com/portfolios/generated-id/index.html",
+  "index_path": "generated-id/index.html",
+  "expires_in_hours": 24
+}
+```
+
+## Production Deployment
+
+### Render Backend
+
+This repo includes `render.yaml` for the API service. Render’s Python deployment docs use:
+
+- build command: `pip install -r requirements.txt`
+- start command: `gunicorn ...`
+
+Reference: [Render deploy docs](https://render.com/docs/deploy-flask)
+
+Steps:
+
+1. Push this repo to GitHub.
+2. Create a new Render Web Service from the repo.
+3. Render should pick up `render.yaml`.
+4. In Render, attach a persistent disk and mount it at:
 
 ```text
-script.py
-web_app.py
-resume_parser.py
-portfolio_renderer.py
-generated_portfolio/
-Meet_Gandhi.pdf
+/opt/render/project/src/storage
 ```
+
+Render documents that files are ephemeral by default unless you use a persistent disk. Reference: [Render persistent disks](https://render.com/docs/disks)
+
+5. Set `ALLOWED_ORIGINS` to your Vercel frontend URL.
+6. Deploy and copy your Render service URL.
+
+### Vercel Frontend
+
+This repo includes:
+
+- `frontend/index.html`
+- `frontend/styles.css`
+- `frontend/app.js`
+- `vercel.json`
+
+Steps:
+
+1. Import the repo into Vercel.
+2. Deploy it as a static site.
+3. Update `frontend/config.js` so `window.FOLIOFORGE_API_BASE` points to your Render backend URL.
+4. Redeploy Vercel after that change.
+
+Example:
+
+```js
+window.FOLIOFORGE_API_BASE = "https://your-render-service.onrender.com";
+```
+
+## Environment Variables
+
+Backend variables:
+
+- `PORT`: provided by Render automatically
+- `HOST`: optional, defaults to `0.0.0.0`
+- `DATA_DIR`: storage directory for uploads and generated portfolios
+- `MAX_UPLOAD_MB`: upload size limit in megabytes
+- `PORTFOLIO_TTL_HOURS`: how long generated jobs are kept
+- `ALLOWED_ORIGINS`: comma-separated list of allowed frontend origins
+
+## Notes
+
+- Generated portfolios are stored per upload using a unique job ID.
+- Old uploads and generated sites are cleaned up automatically based on `PORTFOLIO_TTL_HOURS`.
+- For a larger-scale product, moving uploads and generated outputs to object storage would be stronger than relying only on disk-backed local storage.
 
 ## License
 
