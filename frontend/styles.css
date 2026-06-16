@@ -62,14 +62,14 @@ body{
 }
 
 .brand-logo{
-    width:min(280px, 78%);
+    width:min(240px, 68%);
     height:auto;
     display:block;
-    margin:0 auto 14px;
+    margin:0 auto 4px;
 }
 
 .eyebrow{
-    margin:0;
+    margin:0 0 6px;
     font-size:.82rem;
     letter-spacing:.24em;
     text-transform:uppercase;
@@ -77,8 +77,9 @@ body{
     font-weight:700;
 }
 
-h1{
-    margin:10px auto 14px;
+h1,
+h2{
+    margin:0 auto 14px;
     max-width:12ch;
     font-family:Georgia,"Times New Roman",serif;
     font-size:clamp(2.2rem, 6vw, 4rem);
@@ -105,8 +106,15 @@ h1{
     border-radius:22px;
     background:rgba(247,250,246,.86);
     text-align:left;
-    cursor:pointer;
     transition:transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.dropzone-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
 }
 
 .dropzone:hover{
@@ -124,6 +132,21 @@ h1{
 .dropzone-file{
     color:var(--muted);
     line-height:1.55;
+}
+
+.upload-trigger{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:max-content;
+    min-height:40px;
+    padding:0 16px;
+    border-radius:999px;
+    background:linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color:#fff;
+    font-size:.92rem;
+    font-weight:700;
+    box-shadow:0 10px 20px rgba(19,92,76,.16);
 }
 
 input[type="file"]{
@@ -156,10 +179,10 @@ button:disabled{
 }
 
 .status,
-.result{
+.result-card{
     margin-top:18px;
-    padding:16px 18px;
     border-radius:18px;
+    padding:16px 18px;
     text-align:left;
 }
 
@@ -175,19 +198,112 @@ button:disabled{
     color:#7d1d1d;
 }
 
-.result{
-    background:rgba(255,255,255,.74);
-    border:1px solid rgba(27,127,105,.12);
+.result-overlay{
+    position:fixed;
+    inset:0;
+    display:grid;
+    place-items:center;
+    padding:24px;
+    background:rgba(12,24,20,.26);
+    backdrop-filter:blur(12px);
+    z-index:30;
 }
 
-.result p{
-    margin:0 0 8px;
+.result-overlay[hidden]{
+    display:none !important;
 }
 
-.result a{
+.result-card{
+    position:relative;
+    width:min(560px, 100%);
+    margin-top:0;
+    padding:24px 22px 22px;
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.98), rgba(244,250,247,.94)),
+        rgba(255,255,255,.92);
+    border:1px solid rgba(27,127,105,.14);
+    box-shadow:0 18px 40px rgba(19,92,76,.10);
+}
+
+.result-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:36px;
+    min-height:36px;
+    border-radius:999px;
+    border:1px solid rgba(27,127,105,.14);
+    background:rgba(255,255,255,.9);
     color:var(--accent-strong);
+    box-shadow:none;
+    font-size:1.2rem;
+    line-height:1;
+    padding:0;
+}
+
+.result-kicker{
+    margin:0 0 8px;
+    text-transform:uppercase;
+    letter-spacing:.2em;
+    font-size:.76rem;
+    font-weight:700;
+    color:var(--accent);
+}
+
+.result-card h3{
+    margin:0 0 10px;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:clamp(1.5rem, 4vw, 2.2rem);
+    line-height:1.05;
+    color:var(--text);
+}
+
+.result-copy{
+    margin:0 0 16px;
+    color:var(--muted);
+    line-height:1.6;
+}
+
+.result-actions{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.result-action{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:46px;
+    padding:0 18px;
+    border-radius:999px;
+    font-size:.95rem;
     font-weight:700;
     text-decoration:none;
+    cursor:pointer;
+}
+
+.result-action.primary{
+    background:linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color:#fff;
+    box-shadow:0 14px 28px rgba(19,92,76,.16);
+}
+
+.result-action.secondary{
+    border:1px solid rgba(27,127,105,.16);
+    background:rgba(255,255,255,.88);
+    color:var(--accent-strong);
+    box-shadow:none;
+}
+
+.copy-feedback{
+    margin:14px 0 0;
+    color:var(--accent-strong);
+    font-weight:600;
+}
+
+body.has-result-overlay{
+    overflow:hidden;
 }
 
 @media (max-width: 640px){

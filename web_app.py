@@ -11,6 +11,7 @@ from portfolio_renderer import generate_site
 from resume_parser import parse_resume
 
 BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR / "frontend"
 DEFAULT_DATA_DIR = BASE_DIR / "storage"
 UPLOAD_DIR_NAME = "uploads"
 PORTFOLIO_DIR_NAME = "portfolios"
@@ -69,6 +70,15 @@ def cleanup_old_jobs() -> None:
                 continue
             if modified_at >= cutoff:
                 continue
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink(missing_ok=True)
+
+
+def reset_runtime_data() -> None:
+    for root in (uploads_root(), portfolios_root()):
+        for child in root.iterdir():
             if child.is_dir():
                 shutil.rmtree(child, ignore_errors=True)
             else:
@@ -138,6 +148,10 @@ def create_app() -> Flask:
 
     @app.get("/")
     def root():
+        return send_from_directory(FRONTEND_DIR, "index.html")
+
+    @app.get("/api")
+    def api_root():
         return jsonify(
             {
                 "name": "FolioForge API",
@@ -146,6 +160,22 @@ def create_app() -> Flask:
                 "health_endpoint": "/api/health",
             }
         )
+
+    @app.get("/styles.css")
+    def frontend_styles():
+        return send_from_directory(FRONTEND_DIR, "styles.css", mimetype="text/css")
+
+    @app.get("/app.js")
+    def frontend_app():
+        return send_from_directory(FRONTEND_DIR, "app.js", mimetype="application/javascript")
+
+    @app.get("/config.js")
+    def frontend_config():
+        return send_from_directory(FRONTEND_DIR, "config.js", mimetype="application/javascript")
+
+    @app.get("/frontend-logo.png")
+    def frontend_logo():
+        return send_from_directory(FRONTEND_DIR, "logo.png", mimetype="image/png")
 
     @app.get("/api/health")
     def health():
@@ -217,6 +247,7 @@ app = create_app()
 def main() -> None:
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8000"))
+    reset_runtime_data()
     print(f"FolioForge API running on http://{host}:{port}")
     app.run(host=host, port=port)
 

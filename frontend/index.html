@@ -17,28 +17,39 @@
                 onerror="this.onerror=null; this.src='/frontend-logo.png';"
             >
             <p class="eyebrow">Resume To Portfolio</p>
-            <h1>Upload a CV and launch a personal website in minutes.</h1>
+            <h2>Upload your CV</h2>
             <p class="lead">
                 FolioForge turns a PDF resume into a polished multi-page portfolio that users can open and share instantly.
             </p>
 
             <form id="upload-form" class="upload-card">
-                <label class="dropzone" for="resume">
-                    <span class="dropzone-title">Choose a PDF resume</span>
-                    <span class="dropzone-copy">One upload, one generated portfolio, ready to open in a new tab.</span>
+                <div class="dropzone">
+                    <div class="dropzone-head">
+                        <span class="dropzone-title">Choose a PDF resume</span>
+                        <label class="upload-trigger" for="resume">Upload PDF</label>
+                    </div>
                     <span class="dropzone-file" id="file-name">No file selected</span>
-                </label>
+                </div>
                 <input id="resume" name="resume" type="file" accept=".pdf,application/pdf" required>
                 <button type="submit" id="submit-button">Generate Portfolio</button>
             </form>
 
             <div id="status" class="status" hidden></div>
-            <div id="result" class="result" hidden>
-                <p>Your portfolio is ready.</p>
-                <a id="portfolio-link" href="#" target="_blank" rel="noreferrer">Open Portfolio</a>
-            </div>
         </section>
     </main>
+    <div id="result-overlay" class="result-overlay" hidden>
+        <div id="result" class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+            <button type="button" id="result-close" class="result-close" aria-label="Close success card">×</button>
+            <p class="result-kicker">Congratulations</p>
+            <h3 id="result-title">Your portfolio website is ready.</h3>
+            <p class="result-copy">Your generated site link is below. Open it or copy it and share it anywhere.</p>
+            <div class="result-actions">
+                <a id="result-open" class="result-action primary" href="#" target="_blank" rel="noreferrer">Open Website</a>
+                <button type="button" id="copy-link" class="result-action secondary">Copy Link</button>
+            </div>
+            <p id="copy-feedback" class="copy-feedback" hidden>Link copied to clipboard.</p>
+        </div>
+    </div>
     <script src="/app.js"></script>
 </body>
 </html>
