@@ -3,6 +3,9 @@ import re
 import unicodedata
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+LOGO_FILENAME = "logo.png"
+
 NAV_ITEMS = [
     ("Home", "index.html"),
     ("About", "about.html"),
@@ -45,6 +48,18 @@ def has_responsibility(data: dict) -> bool:
             has_items(responsibility.get("bullets", [])),
         ]
     )
+
+
+def has_projects(data: dict) -> bool:
+    return bool(data.get("projects"))
+
+
+def primary_focus(data: dict) -> str:
+    if data.get("projects"):
+        return "Projects, experience, and practical delivery."
+    if data.get("experience"):
+        return "Experience, execution, and professional growth."
+    return "Skills, education, and professional profile."
 
 
 def nav(active: str, name: str) -> str:
@@ -95,6 +110,10 @@ def footer(data: dict) -> str:
             <div class="footer-meta">
                 <div class="footer-contact">
                     {''.join(links)}
+                </div>
+                <div class="footer-branding" aria-label="Created using FolioForge">
+                    <img src="{LOGO_FILENAME}" alt="FolioForge logo" class="footer-brand-logo">
+                    <p>Created using <span>FolioForge</span></p>
                 </div>
             </div>
         </footer>
@@ -210,6 +229,27 @@ def render_skill_cards(data: dict) -> str:
 def render_home(data: dict) -> str:
     title = escape(data["title"])
     summary = escape(data["summary"])
+    project_href = "projects.html" if has_projects(data) else "journey.html"
+    project_label = "See Projects" if has_projects(data) else "View Journey"
+    hero_copy = primary_focus(data)
+    quick_links = [
+        ("01", "about.html", "About", "A concise overview of profile, background, and focus."),
+        ("02", "skills.html", "Skills", "Tools, strengths, and working capabilities from the resume."),
+        ("03", "journey.html", "Journey", "Education and experience presented as a clean professional timeline."),
+    ]
+    if has_projects(data):
+        quick_links.append(("04", "projects.html", "Projects", "Selected work and problem-solving highlights from the resume."))
+    quick_links_html = "".join(
+        f"""
+                <a class="card link-card" href="{href}">
+                    <p class="link-kicker">{number}</p>
+                    <h3>{label}</h3>
+                    <p class="muted">{copy}</p>
+                    <span class="link-arrow">&rarr;</span>
+                </a>
+        """
+        for number, href, label, copy in quick_links
+    )
     content = f"""
         <header class="hero">
             <div>
@@ -218,14 +258,14 @@ def render_home(data: dict) -> str:
                 <p class="lede">{summary}</p>
                 <div class="cta-row">
                     <a class="button primary" href="about.html">View About</a>
-                    <a class="button secondary" href="projects.html">See Projects</a>
+                    <a class="button secondary" href="{project_href}">{project_label}</a>
                 </div>
             </div>
             <div class="hero-card">
                 <div>
                     <p class="eyebrow">At a glance</p>
-                    <h2 class="hero-card-title">Builder</h2>
-                    <p class="hero-card-copy">AI/ML, web, deployment.</p>
+                    <h2 class="hero-card-title">{title}</h2>
+                    <p class="hero-card-copy">{escape(hero_copy)}</p>
                 </div>
                 <div class="hero-strip">
                     <span>{len(data['experience']) or 0} experience roles</span>
@@ -241,30 +281,7 @@ def render_home(data: dict) -> str:
                 <h2>Explore the portfolio</h2>
             </div>
             <div class="quick-links-grid">
-                <a class="card link-card" href="about.html">
-                    <p class="link-kicker">01</p>
-                    <h3>About</h3>
-                    <p class="muted">A short overview of who I am and what I focus on.</p>
-                    <span class="link-arrow">→</span>
-                </a>
-                <a class="card link-card" href="skills.html">
-                    <p class="link-kicker">02</p>
-                    <h3>Skills</h3>
-                    <p class="muted">Programming languages, tools, frameworks, and interests.</p>
-                    <span class="link-arrow">→</span>
-                </a>
-                <a class="card link-card" href="journey.html">
-                    <p class="link-kicker">03</p>
-                    <h3>Journey</h3>
-                    <p class="muted">Education, experience, responsibility, and achievements.</p>
-                    <span class="link-arrow">→</span>
-                </a>
-                <a class="card link-card" href="projects.html">
-                    <p class="link-kicker">04</p>
-                    <h3>Projects</h3>
-                    <p class="muted">Selected work from the resume.</p>
-                    <span class="link-arrow">→</span>
-                </a>
+                {quick_links_html}
             </div>
         </section>
     """
@@ -284,10 +301,12 @@ def render_about(data: dict) -> str:
             """
         )
     skill_rows_html = "".join(skill_rows)
+    focus_label = data["title"] if data.get("title") else "Professional profile"
+    location_label = data.get("location") or "Location available in resume"
     content = f"""
         <section class="section about-section">
             <div class="section-head">
-                <h1 class="page-title about-title typewriter">A focused builder with an ML and web background</h1>
+                <h1 class="page-title about-title typewriter">A focused professional profile</h1>
             </div>
             <div class="grid grid-2 about-grid">
                 <article class="card profile-card about-main">
@@ -295,30 +314,30 @@ def render_about(data: dict) -> str:
                         <div>
                             <h2>About Me</h2>
                         </div>
-                        <span class="profile-pill">AI/ML + Web</span>
+                        <span class="profile-pill">{escape(focus_label)}</span>
                     </div>
                     <p class="profile-summary">{escape(data['summary'])}</p>
                     <div class="about-quote">
-                        Turning ideas into clear, usable systems with a calm, polished finish.
+                        Clear communication, practical execution, and polished delivery.
                     </div>
                     <p class="profile-note">
-                        I like turning ideas into usable systems, whether that means model deployment,
-                        clean UI, or an end-to-end workflow that actually works in the real world.
+                        This portfolio is generated from the resume and highlights the most relevant
+                        parts of the candidate's background, strengths, and working history.
                     </p>
                     <div class="profile-points">
                         <div class="profile-point">
                             <span>Focus</span>
-                            <strong>Practical problem solving</strong>
+                            <strong>{escape(focus_label)}</strong>
                         </div>
                         <div class="profile-point">
-                            <span>Style</span>
-                            <strong>Clean and polished delivery</strong>
+                            <span>Location</span>
+                            <strong>{escape(location_label)}</strong>
                         </div>
                     </div>
                     <div class="hero-tags">
-                        <span class="pill">Research-minded</span>
-                        <span class="pill">Product-aware</span>
-                        <span class="pill">Execution-focused</span>
+                        <span class="pill">Professional profile</span>
+                        <span class="pill">Resume-driven</span>
+                        <span class="pill">Structured overview</span>
                     </div>
                 </article>
                 <article class="card about-aside">
@@ -326,15 +345,15 @@ def render_about(data: dict) -> str:
                     <div class="mini-metrics">
                         <div class="mini-metric">
                             <span>Focus</span>
-                            <strong>ML + Web</strong>
+                            <strong>{escape(focus_label)}</strong>
                         </div>
                         <div class="mini-metric">
-                            <span>Style</span>
-                            <strong>Clean delivery</strong>
+                            <span>Experience</span>
+                            <strong>{len(data['experience']) or 0} roles</strong>
                         </div>
                         <div class="mini-metric">
-                            <span>Approach</span>
-                            <strong>Practical build</strong>
+                            <span>Skills</span>
+                            <strong>{len(data['skills']) or 0} groups</strong>
                         </div>
                     </div>
                     <div class="skill-rows">
@@ -358,12 +377,12 @@ def render_skills(data: dict) -> str:
     content = f"""
         <section class="section">
             <div class="section-head">
-                <h1 class="page-title typewriter">Toolkit that ships</h1>
+                <h1 class="page-title typewriter">Core skills and tools</h1>
             </div>
             <div class="skill-summary">
                 <span>{len(data['skills']) or 0} groups</span>
                 <span>{skill_total} total tools</span>
-                <span>AI/ML + web focused</span>
+                <span>Resume-based overview</span>
             </div>
             <div class="grid grid-2">
                 {render_skill_cards(data)}
@@ -431,14 +450,22 @@ def render_journey(data: dict) -> str:
 
 
 def render_projects(data: dict) -> str:
+    body = (
+        f'<div class="grid grid-2">{render_project_cards(data)}</div>'
+        if has_projects(data)
+        else """
+            <article class="card">
+                <h3>Projects not detected</h3>
+                <p class="muted">This resume did not expose a structured projects section for rendering.</p>
+            </article>
+        """
+    )
     content = f"""
         <section class="section">
             <div class="section-head">
                 <h1 class="page-title typewriter">Selected work</h1>
             </div>
-            <div class="grid grid-2">
-                {render_project_cards(data)}
-            </div>
+            {body}
         </section>
     """
     return page_shell(f"Projects | {escape(data['name'])}", "projects.html", data, content)
@@ -1259,13 +1286,13 @@ a{color:inherit}
 }
 .site-footer{
     margin-top:44px;
-    padding:24px 4px 8px;
-    display:flex;
+    padding:16px 4px 18px;
+    display:grid;
+    grid-template-columns:1fr auto;
     align-items:flex-start;
-    justify-content:space-between;
     gap:20px;
-    flex-wrap:wrap;
     position:relative;
+    overflow:visible;
     background:linear-gradient(180deg, rgba(201,164,106,.05), transparent 72%);
 }
 .site-footer::before{
@@ -1295,7 +1322,7 @@ a{color:inherit}
     gap:14px;
     flex-wrap:wrap;
     align-items:center;
-    justify-content:flex-end;
+    justify-content:flex-start;
 }
 .footer-contact a{
     display:inline-flex;
@@ -1327,6 +1354,35 @@ a{color:inherit}
     border-color:rgba(201,164,106,.42);
     color:#e7c98a;
 }
+.footer-branding{
+    display:flex;
+    align-items:center;
+    gap:1px;
+    color:rgba(255,255,255,.72);
+    font-size:.9rem;
+    position:absolute;
+    left:50%;
+    bottom:-34px;
+    transform:translateX(-50%);
+    justify-content:center;
+    width:max-content;
+}
+.footer-branding p{
+    margin:0;
+}
+.footer-branding span{
+    color:#fbf4e8;
+    font-weight:700;
+}
+.footer-brand-logo{
+    width:140px;
+    height:140px;
+    object-fit:contain;
+    border-radius:0;
+    background:transparent;
+    border:0;
+    padding:0;
+}
 @media (max-width: 900px){
     .journey-grid{
         grid-template-columns:1fr;
@@ -1355,13 +1411,24 @@ a{color:inherit}
         justify-content:flex-start;
     }
     .site-footer{
-        flex-direction:column;
+        grid-template-columns:1fr;
+        align-items:flex-start;
+        padding-bottom:24px;
     }
     .footer-meta{
         align-items:flex-start;
     }
+    .footer-branding{
+        position:static;
+        transform:none;
+        width:auto;
+        margin-top:8px;
+    }
     .footer-contact{
         justify-content:flex-start;
+    }
+    .footer-branding{
+        justify-content:center;
     }
 }
 @media (max-width: 640px){
@@ -1440,6 +1507,9 @@ def write_page(output_dir: Path, filename: str, content: str) -> None:
 
 def generate_site(data: dict, output_dir: Path) -> None:
     ensure_output_dir(output_dir)
+    logo_path = BASE_DIR / LOGO_FILENAME
+    if logo_path.exists():
+        (output_dir / LOGO_FILENAME).write_bytes(logo_path.read_bytes())
     (output_dir / "style.css").write_text(create_css(), encoding="utf-8")
     write_page(output_dir, "index.html", render_home(data))
     write_page(output_dir, "about.html", render_about(data))

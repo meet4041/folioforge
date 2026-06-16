@@ -83,6 +83,10 @@ def looks_like_url(line: str) -> bool:
     return bool(re.search(r"(https?://|www\.)\S+", line)) or "linkedin.com" in line or "github.com" in line
 
 
+def split_pipe_parts(line: str) -> list[str]:
+    return [part.strip() for part in line.split("|") if part.strip()]
+
+
 def looks_like_date(line: str) -> bool:
     lowered = line.lower()
     if "present" in lowered:
@@ -93,7 +97,9 @@ def looks_like_date(line: str) -> bool:
         return True
     if re.search(r"\b\d{4}\b", line) and ("-" in line or "to" in lowered):
         return True
-    if re.search(rf"\b{MONTH_PATTERN}\b", lowered) and re.search(r"\b\d{{4}}\b", line):
+    if re.search(rf"\b{MONTH_PATTERN}\b", lowered) and re.search(r"\b\d{4}\b", line):
+        return True
+    if re.search(rf"\b{MONTH_PATTERN}\b\s+\d{{4}}\s*[-–—]\s*(?:{MONTH_PATTERN}\s+\d{{4}}|present)", lowered):
         return True
     return False
 
@@ -143,6 +149,17 @@ def detect_title(lines: list[str], name: str) -> str:
             continue
         if not looks_like_email(line) and not looks_like_url(line) and not is_heading(line):
             return line
+    return ""
+
+
+def extract_location(lines: list[str]) -> str:
+    for line in lines:
+        if "|" not in line:
+            continue
+        for part in reversed(split_pipe_parts(line)):
+            if looks_like_email(part) or looks_like_url(part) or re.search(r"\+?\d[\d\s-]{7,}", part):
+                continue
+            return part
     return ""
 
 
@@ -275,14 +292,25 @@ def parse_education(lines: list[str]) -> list[dict]:
     entries = []
     for block in parse_blocks(lines, is_start):
         title = block[0]
+        if len(block) > 1 and block[1] == title:
+            block = [block[0]] + block[2:]
         period = block[1] if len(block) > 1 else ""
         details = [line for line in block[2:] if not looks_like_bullet(line)]
+        school = title
+        detail = details[0] if details else ""
+        location = details[-1] if len(details) > 1 else ""
+        if details and "|" in details[0]:
+            parts = split_pipe_parts(details[0])
+            if parts:
+                school = parts[0]
+                location = parts[-1] if len(parts) > 1 else ""
+                detail = " | ".join(parts[1:-1]) if len(parts) > 2 else ""
         entries.append(
             {
-                "school": title,
+                "school": school,
                 "period": period,
-                "detail": details[0] if details else "",
-                "location": details[-1] if len(details) > 1 else "",
+                "detail": detail,
+                "location": location,
             }
         )
     return entries
@@ -294,17 +322,19 @@ def parse_experience(lines: list[str]) -> list[dict]:
 
     entries = []
     for block in parse_blocks(lines, is_start):
-        title = block[0]
+        role = block[0]
         period = block[1] if len(block) > 1 else ""
-        body = [line for line in block[2:] if line and line != "Â§"]
+        company_line = block[2] if len(block) > 2 else ""
+        body = [line for line in block[3:] if line and line != "Â§"]
         bullets, non_bullets = collect_bullets(body)
-        role = non_bullets[0] if non_bullets else ""
-        location = non_bullets[1] if len(non_bullets) > 1 else ""
-        if len(non_bullets) > 2:
-            bullets.extend(non_bullets[2:])
+        if non_bullets:
+            bullets = non_bullets + bullets
+        parts = split_pipe_parts(company_line)
+        company = parts[0] if parts else company_line
+        location = parts[-1] if len(parts) > 1 else ""
         entries.append(
             {
-                "company": title,
+                "company": company,
                 "period": period,
                 "role": role,
                 "location": location,
@@ -367,36 +397,48 @@ def parse_resume(pdf_path: Path) -> dict:
     sections = split_sections(lines)
     name = first_non_contact(lines)
     title = detect_title(lines, name)
+    location = extract_location(lines)
     contacts = extract_contacts(lines)
     links = extract_links(lines)
+    education = parse_education(sections["education"])
+    experience = parse_experience(sections["experience"])
+    projects = parse_projects(sections["projects"])
+    skills = parse_skills(sections["skills"])
+    summary_lines = [line for line in sections["summary"] if not looks_like_email(line) and not looks_like_url(line)]
+    if not title and experience:
+        title = experience[0]["role"]
+    if title and (len(title) > 80 or " with " in title.lower()) and experience:
+        title = experience[0]["role"]
 
     data = {
         "source": pdf_path,
         "name": name,
         "title": title or "Portfolio",
+        "location": location,
         "email": contacts["email"],
         "linkedin": contacts["linkedin"],
         "github": contacts["github"],
         "links": links,
         "summary": "",
-        "education": parse_education(sections["education"]),
-        "experience": parse_experience(sections["experience"]),
-        "projects": parse_projects(sections["projects"]),
-        "skills": parse_skills(sections["skills"]),
+        "education": education,
+        "experience": experience,
+        "projects": projects,
+        "skills": skills,
         "responsibility": parse_responsibility(sections["responsibility"]),
         "achievements": parse_achievements(sections["achievements"]),
     }
 
-    focus = []
-    if data["experience"]:
-        focus.append("professional experience")
-    if data["projects"]:
-        focus.append("selected projects")
-    if data["skills"]:
-        focus.append("technical skills")
-    if focus:
-        focus_text = ", ".join(focus[:-1] + [focus[-1]]) if len(focus) > 1 else focus[0]
-        data["summary"] = f"{data['name']} is an {data['title']} graduate focused on {focus_text}."
+    if summary_lines:
+        data["summary"] = " ".join(summary_lines[:2])
     else:
-        data["summary"] = f"{data['name']} is an {data['title']} graduate."
+        focus = []
+        if data["experience"]:
+            focus.append("experience")
+        if data["projects"]:
+            focus.append("projects")
+        if data["skills"]:
+            focus.append("core skills")
+        focus_text = ", ".join(focus[:-1] + [focus[-1]]) if len(focus) > 1 else (focus[0] if focus else "professional growth")
+        location_text = f" based in {data['location']}" if data["location"] else ""
+        data["summary"] = f"{data['name']} is a {data['title']}{location_text}, with a profile centered on {focus_text}."
     return data
