@@ -16,6 +16,10 @@
     {
       "source": "/config.js",
       "destination": "/frontend/config.js"
+    },
+    {
+      "source": "/frontend-logo.png",
+      "destination": "/frontend/logo.png"
     }
   ]
 }
