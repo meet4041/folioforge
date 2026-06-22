@@ -128,7 +128,6 @@ h2{
     font-size:1rem;
 }
 
-.dropzone-copy,
 .dropzone-file{
     color:var(--muted);
     line-height:1.55;
@@ -178,15 +177,11 @@ button:disabled{
     cursor:wait;
 }
 
-.status,
-.result-card{
+.status{
     margin-top:18px;
     border-radius:18px;
     padding:16px 18px;
     text-align:left;
-}
-
-.status{
     background:rgba(27,127,105,.10);
     color:var(--text);
     border:1px solid rgba(27,127,105,.14);
@@ -198,6 +193,7 @@ button:disabled{
     color:#7d1d1d;
 }
 
+.review-overlay,
 .result-overlay{
     position:fixed;
     inset:0;
@@ -212,15 +208,223 @@ button:disabled{
     animation:overlayFade .24s ease;
 }
 
+.review-overlay{
+    z-index:25;
+}
+
+.review-overlay[hidden],
 .result-overlay[hidden]{
     display:none !important;
+}
+
+.review-modal{
+    width:min(980px, 100%);
+    max-height:min(92vh, 980px);
+    overflow:auto;
+    border-radius:28px;
+    padding:26px 24px 22px;
+    background:
+        linear-gradient(160deg, rgba(255,255,255,.98), rgba(243,251,247,.95) 58%, rgba(255,250,239,.94)),
+        rgba(255,255,255,.92);
+    border:1px solid rgba(27,127,105,.14);
+    box-shadow:
+        0 24px 60px rgba(19,92,76,.18),
+        inset 0 1px 0 rgba(255,255,255,.72);
+    animation:cardRise .34s cubic-bezier(.2,.8,.2,1);
+}
+
+.review-topbar{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+}
+
+.review-kicker,
+.result-kicker{
+    margin:0 0 8px;
+    text-transform:uppercase;
+    letter-spacing:.2em;
+    font-size:.76rem;
+    font-weight:700;
+    color:var(--accent);
+}
+
+.review-topbar h3{
+    margin:0;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:clamp(1.7rem, 4vw, 2.6rem);
+    line-height:1.02;
+}
+
+.review-copy{
+    margin:12px 0 22px;
+    color:var(--muted);
+    line-height:1.7;
+    max-width:66ch;
+}
+
+.review-close,
+.result-close{
+    width:42px;
+    min-height:42px;
+    border-radius:999px;
+    border:1px solid rgba(27,127,105,.14);
+    background:rgba(255,255,255,.9);
+    color:var(--accent-strong);
+    box-shadow:none;
+    font-size:1.3rem;
+    line-height:1;
+    padding:0;
+    transition:transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.review-close:hover,
+.result-close:hover{
+    transform:rotate(90deg);
+    background:#fff;
+    border-color:rgba(27,127,105,.28);
+}
+
+.review-form{
+    display:grid;
+    gap:18px;
+}
+
+.review-section{
+    padding:18px;
+    border-radius:22px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(27,127,105,.10);
+}
+
+.review-section h4{
+    margin:0;
+    font-size:1rem;
+}
+
+.review-section-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+}
+
+.review-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:14px;
+}
+
+.review-field{
+    display:grid;
+    gap:8px;
+    margin-top:14px;
+}
+
+.review-field span{
+    font-size:.9rem;
+    font-weight:700;
+    color:var(--text);
+}
+
+.review-field input,
+.review-field textarea{
+    width:100%;
+    border:1px solid rgba(27,127,105,.14);
+    border-radius:14px;
+    background:rgba(255,255,255,.86);
+    color:var(--text);
+    padding:12px 14px;
+    font:inherit;
+}
+
+.review-field textarea{
+    resize:vertical;
+    min-height:110px;
+}
+
+.review-field--full{
+    grid-column:1 / -1;
+}
+
+.review-stack{
+    display:grid;
+    gap:12px;
+}
+
+.review-empty{
+    margin-top:14px;
+    padding:16px;
+    border-radius:18px;
+    background:rgba(247,250,246,.82);
+    border:1px solid rgba(27,127,105,.10);
+    color:var(--muted);
+}
+
+.review-item{
+    margin-top:14px;
+    padding:16px;
+    border-radius:18px;
+    background:rgba(247,250,246,.82);
+    border:1px solid rgba(27,127,105,.10);
+}
+
+.review-item-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:10px;
+}
+
+.review-item-title{
+    font-size:.88rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+}
+
+.review-remove,
+.review-add,
+.review-secondary{
+    min-height:40px;
+    width:auto;
+    padding:0 16px;
+    border-radius:999px;
+    border:1px solid rgba(27,127,105,.16);
+    background:rgba(255,255,255,.88);
+    color:var(--accent-strong);
+    box-shadow:none;
+    font-size:.9rem;
+}
+
+.review-remove{
+    min-height:34px;
+    padding:0 12px;
+}
+
+.review-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.review-primary{
+    width:auto;
+    min-height:48px;
+    padding:0 22px;
 }
 
 .result-card{
     position:relative;
     width:min(560px, 100%);
-    margin-top:0;
     padding:30px 24px 24px;
+    border-radius:26px;
     background:
         linear-gradient(160deg, rgba(255,255,255,.98), rgba(243,251,247,.94) 58%, rgba(255,250,239,.92)),
         rgba(255,255,255,.92);
@@ -251,23 +455,6 @@ button:disabled{
     position:absolute;
     top:14px;
     right:14px;
-    width:40px;
-    min-height:40px;
-    border-radius:999px;
-    border:1px solid rgba(27,127,105,.14);
-    background:rgba(255,255,255,.9);
-    color:var(--accent-strong);
-    box-shadow:none;
-    font-size:1.2rem;
-    line-height:1;
-    padding:0;
-    transition:transform .18s ease, background .18s ease, border-color .18s ease;
-}
-
-.result-close:hover{
-    transform:rotate(90deg);
-    background:#fff;
-    border-color:rgba(27,127,105,.28);
 }
 
 .result-badge{
@@ -306,12 +493,6 @@ button:disabled{
 }
 
 .result-kicker{
-    margin:0 0 10px;
-    text-transform:uppercase;
-    letter-spacing:.2em;
-    font-size:.76rem;
-    font-weight:700;
-    color:var(--accent);
     text-align:center;
 }
 
@@ -377,7 +558,7 @@ button:disabled{
     text-align:center;
 }
 
-body.has-result-overlay{
+body.has-overlay{
     overflow:hidden;
 }
 
@@ -418,6 +599,19 @@ body.has-result-overlay{
     .hero-card{
         padding:24px 18px;
         border-radius:24px;
+    }
+
+    .review-modal{
+        padding:20px 16px 18px;
+        border-radius:22px;
+    }
+
+    .review-grid{
+        grid-template-columns:1fr;
+    }
+
+    .review-field--full{
+        grid-column:auto;
     }
 
     .result-card{

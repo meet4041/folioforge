@@ -31,12 +31,133 @@
                     <span class="dropzone-file" id="file-name">No file selected</span>
                 </div>
                 <input id="resume" name="resume" type="file" accept=".pdf,application/pdf" required>
-                <button type="submit" id="submit-button">Generate Portfolio</button>
+                <button type="submit" id="submit-button">Review Resume</button>
             </form>
 
             <div id="status" class="status" hidden></div>
         </section>
     </main>
+
+    <div id="review-overlay" class="review-overlay" hidden>
+        <div id="review-modal" class="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title">
+            <div class="review-topbar">
+                <div>
+                    <p class="review-kicker">Review Before Publish</p>
+                    <h3 id="review-title">Edit the extracted resume details.</h3>
+                </div>
+                <button type="button" id="review-close" class="review-close" aria-label="Close review editor">&times;</button>
+            </div>
+            <p class="review-copy">Check the parsed content, make any quick fixes, then build the final portfolio from the edited version.</p>
+
+            <form id="review-form" class="review-form">
+                <section class="review-section">
+                    <h4>Profile</h4>
+                    <div class="review-grid">
+                        <label class="review-field">
+                            <span>Name</span>
+                            <input type="text" id="review-name">
+                        </label>
+                        <label class="review-field">
+                            <span>Title</span>
+                            <input type="text" id="review-title-input">
+                        </label>
+                        <label class="review-field">
+                            <span>Location</span>
+                            <input type="text" id="review-location">
+                        </label>
+                        <label class="review-field">
+                            <span>Email</span>
+                            <input type="email" id="review-email">
+                        </label>
+                        <label class="review-field">
+                            <span>LinkedIn</span>
+                            <input type="text" id="review-linkedin">
+                        </label>
+                        <label class="review-field">
+                            <span>GitHub</span>
+                            <input type="text" id="review-github">
+                        </label>
+                    </div>
+                    <label class="review-field">
+                        <span>Summary</span>
+                        <textarea id="review-summary" rows="4"></textarea>
+                    </label>
+                    <label class="review-field">
+                        <span>Links</span>
+                        <textarea id="review-links" rows="3" placeholder="One link per line"></textarea>
+                    </label>
+                </section>
+
+                <section class="review-section">
+                    <div class="review-section-head">
+                        <h4>Skills</h4>
+                        <button type="button" class="review-add" id="add-skill-group">Add Group</button>
+                    </div>
+                    <div id="skills-editor" class="review-stack"></div>
+                </section>
+
+                <section class="review-section">
+                    <div class="review-section-head">
+                        <h4>Education</h4>
+                        <button type="button" class="review-add" id="add-education">Add Education</button>
+                    </div>
+                    <div id="education-editor" class="review-stack"></div>
+                </section>
+
+                <section class="review-section">
+                    <div class="review-section-head">
+                        <h4>Experience</h4>
+                        <button type="button" class="review-add" id="add-experience">Add Experience</button>
+                    </div>
+                    <div id="experience-editor" class="review-stack"></div>
+                </section>
+
+                <section class="review-section">
+                    <div class="review-section-head">
+                        <h4>Projects</h4>
+                        <button type="button" class="review-add" id="add-project">Add Project</button>
+                    </div>
+                    <div id="projects-editor" class="review-stack"></div>
+                </section>
+
+                <section class="review-section">
+                    <h4>Responsibility</h4>
+                    <div class="review-grid">
+                        <label class="review-field">
+                            <span>Title</span>
+                            <input type="text" id="review-responsibility-title">
+                        </label>
+                        <label class="review-field">
+                            <span>Period</span>
+                            <input type="text" id="review-responsibility-period">
+                        </label>
+                        <label class="review-field review-field--full">
+                            <span>Organization</span>
+                            <input type="text" id="review-responsibility-org">
+                        </label>
+                    </div>
+                    <label class="review-field">
+                        <span>Responsibility Bullets</span>
+                        <textarea id="review-responsibility-bullets" rows="4" placeholder="One bullet per line"></textarea>
+                    </label>
+                </section>
+
+                <section class="review-section">
+                    <h4>Achievements</h4>
+                    <label class="review-field">
+                        <span>Achievement Bullets</span>
+                        <textarea id="review-achievements" rows="5" placeholder="One achievement per line"></textarea>
+                    </label>
+                </section>
+
+                <div class="review-actions">
+                    <button type="button" class="review-secondary" id="review-cancel">Cancel</button>
+                    <button type="submit" class="review-primary" id="review-publish">Build Portfolio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="result-overlay" class="result-overlay" hidden>
         <div id="result" class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
             <button type="button" id="result-close" class="result-close" aria-label="Close success card">&times;</button>
@@ -47,7 +168,7 @@
             </div>
             <p class="result-kicker">Congratulations</p>
             <h3 id="result-title">Your portfolio website is ready.</h3>
-            <p class="result-copy">Your generated site link is below. Open it or copy it and share it anywhere.</p>
+            <p class="result-copy">Your generated site is ready to open or share right away.</p>
             <div class="result-actions">
                 <a id="result-open" class="result-action primary" href="#" target="_blank" rel="noreferrer">Open Website</a>
                 <button type="button" id="copy-link" class="result-action secondary">Copy Link</button>
