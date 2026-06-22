@@ -3,8 +3,19 @@
     const reviewForm = document.getElementById("review-form");
     const fileInput = document.getElementById("resume");
     const fileName = document.getElementById("file-name");
+    const photoInput = document.getElementById("profile-photo");
+    const photoFileName = document.getElementById("photo-file-name");
+    const photoPreview = document.getElementById("photo-preview");
+    const photoPreviewImage = document.getElementById("photo-preview-image");
     const statusBox = document.getElementById("status");
     const submitButton = document.getElementById("submit-button");
+
+    const progressOverlay = document.getElementById("progress-overlay");
+    const progressKicker = document.getElementById("progress-kicker");
+    const progressTitle = document.getElementById("progress-title");
+    const progressCopy = document.getElementById("progress-copy");
+    const progressBar = document.getElementById("progress-bar");
+    const progressSteps = document.getElementById("progress-steps");
 
     const reviewOverlay = document.getElementById("review-overlay");
     const reviewModal = document.getElementById("review-modal");
@@ -35,6 +46,7 @@
     const resultOverlay = document.getElementById("result-overlay");
     const resultBox = document.getElementById("result");
     const resultOpen = document.getElementById("result-open");
+    const resultDownload = document.getElementById("result-download");
     const copyLinkButton = document.getElementById("copy-link");
     const copyFeedback = document.getElementById("copy-feedback");
     const resultClose = document.getElementById("result-close");
@@ -45,7 +57,10 @@
     const requestTimeoutMs = 45000;
 
     let latestPortfolioUrl = "";
+    let latestDownloadUrl = "";
     let latestJobId = "";
+    let latestProfileImage = "";
+    let progressTimer = null;
 
     function showStatus(message, isError) {
         statusBox.hidden = false;
@@ -64,7 +79,7 @@
     }
 
     function hidePageLockIfNeeded() {
-        if (reviewOverlay.hidden && resultOverlay.hidden) {
+        if (progressOverlay.hidden && reviewOverlay.hidden && resultOverlay.hidden) {
             document.body.classList.remove("has-overlay");
         }
     }
@@ -83,6 +98,118 @@
     function hideReviewOverlay() {
         reviewOverlay.hidden = true;
         hidePageLockIfNeeded();
+    }
+
+    function renderProgressState(state) {
+        progressKicker.textContent = state.kicker;
+        progressTitle.textContent = state.title;
+        progressCopy.textContent = state.copy;
+        progressBar.style.width = state.percent + "%";
+
+        Array.from(progressSteps.children).forEach(function (step, index) {
+            step.textContent = state.steps[index] || "";
+            step.classList.toggle("is-active", index === state.activeIndex);
+        });
+    }
+
+    function startProgress(states) {
+        if (progressTimer) {
+            window.clearInterval(progressTimer);
+            progressTimer = null;
+        }
+
+        progressOverlay.hidden = false;
+        showPageLock();
+        renderProgressState(states[0]);
+
+        if (states.length > 1) {
+            let index = 0;
+            progressTimer = window.setInterval(function () {
+                index += 1;
+                if (index >= states.length) {
+                    window.clearInterval(progressTimer);
+                    progressTimer = null;
+                    return;
+                }
+                renderProgressState(states[index]);
+            }, 1150);
+        }
+    }
+
+    function finishProgress(state) {
+        if (progressTimer) {
+            window.clearInterval(progressTimer);
+            progressTimer = null;
+        }
+        renderProgressState(state);
+    }
+
+    function hideProgressOverlay() {
+        if (progressTimer) {
+            window.clearInterval(progressTimer);
+            progressTimer = null;
+        }
+        progressOverlay.hidden = true;
+        progressBar.style.width = "0%";
+        hidePageLockIfNeeded();
+    }
+
+    function parsingProgressStates() {
+        return [
+            {
+                kicker: "Reading Resume",
+                title: "Uploading your CV and scanning every page.",
+                copy: "We are pulling the text structure out of your PDF so the editor can open with real data.",
+                percent: 18,
+                activeIndex: 0,
+                steps: ["Uploading file", "Parsing sections", "Preparing review"]
+            },
+            {
+                kicker: "Parsing Sections",
+                title: "Finding your profile, skills, education, and projects.",
+                copy: "This helps us turn the resume into editable portfolio blocks instead of raw text.",
+                percent: 54,
+                activeIndex: 1,
+                steps: ["Uploading file", "Parsing sections", "Preparing review"]
+            },
+            {
+                kicker: "Preparing Review",
+                title: "Structuring the extracted content for editing.",
+                copy: "We are building the review form so you can fix anything before publishing.",
+                percent: 86,
+                activeIndex: 2,
+                steps: ["Uploading file", "Parsing sections", "Preparing review"]
+            }
+        ];
+    }
+
+    function buildingProgressStates() {
+        return [
+            {
+                kicker: "Publishing Portfolio",
+                title: "Applying your edits to the portfolio structure.",
+                copy: "We are using your reviewed content to build the final website pages.",
+                percent: 16,
+                activeIndex: 0,
+                steps: ["Saving edits", "Rendering pages", "Publishing website"]
+            },
+            {
+                kicker: "Rendering Pages",
+                title: "Creating the portfolio sections and page files.",
+                copy: "Layouts, cards, links, and portfolio pages are being generated now.",
+                percent: 58,
+                activeIndex: 1,
+                steps: ["Saving edits", "Rendering pages", "Publishing website"]
+            },
+            {
+                kicker: "Publishing Website",
+                title: "Finishing the portfolio and preparing it to open.",
+                copy: "Just a moment more while we finalize your live website preview.",
+                percent: 90,
+                activeIndex: 2,
+                steps: ["Saving edits", "Rendering pages", "Publishing website"]
+            }
+        ];
     }
 
     function escapeHtml(value) {
@@ -180,6 +307,7 @@
     }
 
     function fillReviewForm(data) {
+        latestProfileImage = data.profile_image || "";
         reviewName.value = data.name || "";
         reviewTitleInput.value = data.title || "";
         reviewLocation.value = data.location || "";
@@ -203,6 +331,7 @@
         return {
             name: reviewName.value.trim(),
             title: reviewTitleInput.value.trim(),
+            profile_image: latestProfileImage,
             location: reviewLocation.value.trim(),
             email: reviewEmail.value.trim(),
             linkedin: reviewLinkedin.value.trim(),
@@ -353,8 +482,23 @@
         const file = fileInput.files && fileInput.files[0];
         fileName.textContent = file ? file.name : "No file selected";
         hideStatus();
+        hideProgressOverlay();
         hideResultCard();
         hideReviewOverlay();
+    });
+
+    photoInput.addEventListener("change", function () {
+        const file = photoInput.files && photoInput.files[0];
+        photoFileName.textContent = file ? file.name : "No photo selected";
+        if (!file) {
+            photoPreview.hidden = true;
+            photoPreviewImage.src = "";
+            latestProfileImage = "";
+            return;
+        }
+        photoPreviewImage.src = URL.createObjectURL(file);
+        photoPreview.hidden = false;
+        hideStatus();
     });
 
     reviewClose.addEventListener("click", hideReviewOverlay);
@@ -408,11 +552,17 @@
 
         const body = new FormData();
         body.append("resume", file);
+        const photo = photoInput.files && photoInput.files[0];
+        if (photo) {
+            body.append("profile_photo", photo);
+        }
 
         submitButton.disabled = true;
         hideStatus();
+        hideProgressOverlay();
         hideResultCard();
         hideReviewOverlay();
+        startProgress(parsingProgressStates());
 
         try {
             const response = await fetchWithTimeout(apiBase + "/api/parse", {
@@ -425,10 +575,22 @@
                 throw new Error(payload.error || "Resume parsing failed.");
             }
 
+            finishProgress({
+                kicker: "Review Ready",
+                title: "Your resume is parsed and ready to edit.",
+                copy: "Take a quick pass through the extracted details before publishing the portfolio.",
+                percent: 100,
+                activeIndex: 2,
+                steps: ["Uploading file", "Parsing sections", "Preparing review"]
+            });
             latestJobId = payload.job_id;
             fillReviewForm(payload.data || {});
-            showReviewOverlay();
+            window.setTimeout(function () {
+                hideProgressOverlay();
+                showReviewOverlay();
+            }, 450);
         } catch (error) {
+            hideProgressOverlay();
             const message = error.name === "AbortError"
                 ? "Resume parsing timed out. Please try again."
                 : (error.message || "Something went wrong while parsing the resume.");
@@ -449,6 +611,10 @@
 
         submitButton.disabled = true;
         hideStatus();
+        hideProgressOverlay();
+        hideResultCard();
+        hideReviewOverlay();
+        startProgress(buildingProgressStates());
 
         try {
             const response = await fetchWithTimeout(apiBase + "/api/generate", {
@@ -467,14 +633,26 @@
                 throw new Error(payload.error || "Portfolio generation failed.");
             }
 
+            finishProgress({
+                kicker: "Website Ready",
+                title: "Your portfolio has been built successfully.",
+                copy: "Open it now or copy the link and share it anywhere.",
+                percent: 100,
+                activeIndex: 2,
+                steps: ["Saving edits", "Rendering pages", "Publishing website"]
+            });
             latestPortfolioUrl = payload.portfolio_url;
+            latestDownloadUrl = payload.download_url || "";
             resultOpen.href = payload.portfolio_url;
+            resultDownload.href = latestDownloadUrl || payload.portfolio_url;
             copyFeedback.hidden = true;
-            hideReviewOverlay();
-            resultOverlay.hidden = false;
-            showPageLock();
+            window.setTimeout(function () {
+                hideProgressOverlay();
+                resultOverlay.hidden = false;
+                showPageLock();
+            }, 450);
         } catch (error) {
-            hideReviewOverlay();
+            hideProgressOverlay();
             const message = error.name === "AbortError"
                 ? "Portfolio generation timed out. Please try again."
                 : (error.message || "Something went wrong while generating the portfolio.");

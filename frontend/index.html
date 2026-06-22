@@ -31,12 +31,49 @@
                     <span class="dropzone-file" id="file-name">No file selected</span>
                 </div>
                 <input id="resume" name="resume" type="file" accept=".pdf,application/pdf" required>
+                <div class="dropzone dropzone-photo">
+                    <div class="dropzone-head">
+                        <div>
+                            <span class="dropzone-title">Upload profile photo</span>
+                            <p class="dropzone-note">Optional. JPG, PNG, or WEBP works best.</p>
+                        </div>
+                        <label class="upload-trigger" for="profile-photo">Upload Photo</label>
+                    </div>
+                    <div class="photo-upload-row">
+                        <div id="photo-preview" class="photo-preview" hidden>
+                            <img id="photo-preview-image" src="" alt="Profile photo preview">
+                        </div>
+                        <span class="dropzone-file" id="photo-file-name">No photo selected</span>
+                    </div>
+                </div>
+                <input id="profile-photo" name="profile_photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
                 <button type="submit" id="submit-button">Review Resume</button>
             </form>
 
             <div id="status" class="status" hidden></div>
         </section>
     </main>
+
+    <div id="progress-overlay" class="progress-overlay" hidden>
+        <div class="progress-modal" role="status" aria-live="polite" aria-atomic="true">
+            <div class="progress-orbit" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <p id="progress-kicker" class="progress-kicker">Reading Resume</p>
+            <h3 id="progress-title">Scanning your CV and organizing the important details.</h3>
+            <p id="progress-copy" class="progress-copy">This usually takes a few seconds. Stay on this page while we prepare everything.</p>
+            <div class="progress-bar-shell" aria-hidden="true">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="progress-steps" class="progress-steps">
+                <span class="is-active">Uploading file</span>
+                <span>Parsing sections</span>
+                <span>Preparing review</span>
+            </div>
+        </div>
+    </div>
 
     <div id="review-overlay" class="review-overlay" hidden>
         <div id="review-modal" class="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title">
@@ -169,9 +206,12 @@
             <p class="result-kicker">Congratulations</p>
             <h3 id="result-title">Your portfolio website is ready.</h3>
             <p class="result-copy">Your generated site is ready to open or share right away.</p>
-            <div class="result-actions">
-                <a id="result-open" class="result-action primary" href="#" target="_blank" rel="noreferrer">Open Website</a>
-                <button type="button" id="copy-link" class="result-action secondary">Copy Link</button>
+            <div class="result-actions result-actions-top">
+                <button type="button" id="copy-link" class="result-action secondary result-action-compact">Copy Link</button>
+                <a id="result-download" class="result-action secondary" href="#" download>Download Website</a>
+            </div>
+            <div class="result-actions result-actions-bottom">
+                <a id="result-open" class="result-action primary result-action-wide" href="#" target="_blank" rel="noreferrer">Open Website</a>
             </div>
             <p id="copy-feedback" class="copy-feedback" hidden>Link copied to clipboard.</p>
         </div>

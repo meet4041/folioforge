@@ -5,6 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 LOGO_FILENAME = "logo.png"
+PORTFOLIO_ZIP_NAME = "folioforge-portfolio.zip"
 
 NAV_ITEMS = [
     ("Home", "index.html"),
@@ -111,9 +112,12 @@ def footer(data: dict) -> str:
                 <div class="footer-contact">
                     {''.join(links)}
                 </div>
+                <a href="{PORTFOLIO_ZIP_NAME}" class="footer-download" download>Download Website</a>
                 <div class="footer-branding" aria-label="Created using FolioForge">
                     <img src="{LOGO_FILENAME}" alt="FolioForge logo" class="footer-brand-logo">
-                    <p>Created using <span>FolioForge</span></p>
+                    <div class="footer-brand-copy">
+                        <p>Created using <span>FolioForge</span></p>
+                    </div>
                 </div>
             </div>
         </footer>
@@ -229,6 +233,8 @@ def render_skill_cards(data: dict) -> str:
 def render_home(data: dict) -> str:
     title = escape(data["title"])
     summary = escape(data["summary"])
+    profile_image = escape(data.get("profile_image", ""))
+    hero_photo = f'<img src="{profile_image}" alt="{escape(data["name"])} portrait" class="hero-photo hero-photo-card">' if profile_image else ""
     project_href = "projects.html" if has_projects(data) else "journey.html"
     project_label = "See Projects" if has_projects(data) else "View Journey"
     hero_copy = primary_focus(data)
@@ -261,17 +267,8 @@ def render_home(data: dict) -> str:
                     <a class="button secondary" href="{project_href}">{project_label}</a>
                 </div>
             </div>
-            <div class="hero-card">
-                <div>
-                    <p class="eyebrow">At a glance</p>
-                    <h2 class="hero-card-title">{title}</h2>
-                    <p class="hero-card-copy">{escape(hero_copy)}</p>
-                </div>
-                <div class="hero-strip">
-                    <span>{len(data['experience']) or 0} experience roles</span>
-                    <span>{len(data['projects']) or 0} projects</span>
-                    <span>{len(data['skills']) or 0} skill groups</span>
-                </div>
+            <div class="hero-card hero-photo-panel">
+                {hero_photo}
             </div>
         </header>
 
@@ -712,6 +709,27 @@ a{color:inherit}
     font-weight:600;
     letter-spacing:-.04em;
 }
+.hero-photo{
+    width:132px;
+    height:132px;
+    object-fit:cover;
+    display:block;
+    margin:0 0 18px;
+    border-radius:28px;
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 18px 40px rgba(0,0,0,.24);
+    background:rgba(255,255,255,.05);
+}
+.hero-photo-card{
+    width:min(100%, 348px);
+    aspect-ratio:4 / 5;
+    height:auto;
+    margin:0;
+    border-radius:22px;
+    border:0;
+    box-shadow:none;
+    background:transparent;
+}
 .page-title{
     margin:0;
     font-size:clamp(2rem, 3.6vw, 3.2rem);
@@ -1050,13 +1068,26 @@ a{color:inherit}
     min-width:0;
 }
 .hero-card{
-    padding:24px;
+    padding:20px;
     display:flex;
     flex-direction:column;
-    justify-content:space-between;
-    gap:18px;
+    justify-content:center;
+    align-items:center;
+    gap:0;
     position:relative;
     overflow:hidden;
+    min-height:420px;
+}
+.hero-photo-panel{
+    padding:0;
+    min-height:auto;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    backdrop-filter:none;
+}
+.hero-photo-panel::after{
+    display:none;
 }
 .hero-card::after,
 .card::before{
@@ -1357,7 +1388,7 @@ a{color:inherit}
 .footer-branding{
     display:flex;
     align-items:center;
-    gap:1px;
+    gap:8px;
     color:rgba(255,255,255,.72);
     font-size:.9rem;
     position:absolute;
@@ -1367,12 +1398,38 @@ a{color:inherit}
     justify-content:center;
     width:max-content;
 }
+.footer-brand-copy{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+}
 .footer-branding p{
     margin:0;
 }
 .footer-branding span{
     color:#fbf4e8;
     font-weight:700;
+}
+.footer-download{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);
+    color:#fbf4e8;
+    text-decoration:none;
+    font-size:.82rem;
+    font-weight:700;
+    transition:transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.footer-download:hover{
+    transform:translateY(-1px);
+    border-color:rgba(201,164,106,.42);
+    background:rgba(255,255,255,.10);
 }
 .footer-brand-logo{
     width:140px;
@@ -1423,12 +1480,16 @@ a{color:inherit}
         transform:none;
         width:auto;
         margin-top:8px;
+        justify-content:center;
     }
     .footer-contact{
         justify-content:flex-start;
     }
     .footer-branding{
         justify-content:center;
+    }
+    .footer-brand-copy{
+        align-items:center;
     }
 }
 @media (max-width: 640px){
@@ -1438,6 +1499,17 @@ a{color:inherit}
     .hero{
         gap:18px;
         padding-top:24px;
+    }
+    .hero-photo{
+        width:112px;
+        height:112px;
+        margin:0 0 16px;
+    }
+    .hero-photo-card{
+        width:min(100%, 300px);
+        aspect-ratio:4 / 5;
+        height:auto;
+        margin:0;
     }
     .hero h1,
     .page-title,

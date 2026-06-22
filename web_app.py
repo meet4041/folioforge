@@ -1,6 +1,7 @@
 import os
 import shutil
 import json
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -18,6 +19,9 @@ UPLOAD_DIR_NAME = "uploads"
 PORTFOLIO_DIR_NAME = "portfolios"
 DEFAULT_MAX_UPLOAD_MB = 10
 DEFAULT_PORTFOLIO_TTL_HOURS = 24
+PORTFOLIO_ZIP_NAME = "folioforge-portfolio.zip"
+PROFILE_PHOTO_BASENAME = "profile-photo"
+ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def data_root() -> Path:
@@ -101,6 +105,26 @@ def save_upload(job_id: str, filename: str, payload: bytes) -> Path:
     return target_path
 
 
+def save_profile_photo(job_id: str, filename: str, payload: bytes) -> Path:
+    target_dir = uploads_root() / job_id
+    target_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(secure_filename(filename or "photo")).suffix.lower()
+    if suffix not in ALLOWED_PHOTO_EXTENSIONS:
+        raise ValueError("Only JPG, JPEG, PNG, and WEBP profile photos are supported.")
+    target_path = target_dir / f"{PROFILE_PHOTO_BASENAME}{suffix}"
+    target_path.write_bytes(payload)
+    return target_path
+
+
+def find_profile_photo(job_id: str) -> Path | None:
+    target_dir = uploads_root() / job_id
+    for suffix in sorted(ALLOWED_PHOTO_EXTENSIONS):
+        candidate = target_dir / f"{PROFILE_PHOTO_BASENAME}{suffix}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def portfolio_output_dir(job_id: str) -> Path:
     path = portfolios_root() / job_id
     path.mkdir(parents=True, exist_ok=True)
@@ -115,6 +139,7 @@ def serialize_portfolio_data(data: dict) -> dict:
     return {
         "name": data.get("name", ""),
         "title": data.get("title", ""),
+        "profile_image": data.get("profile_image", ""),
         "location": data.get("location", ""),
         "email": data.get("email", ""),
         "linkedin": data.get("linkedin", ""),
@@ -192,8 +217,25 @@ def load_parsed_data(job_id: str) -> dict:
 def generate_portfolio(job_id: str, pdf_path: Path | None = None, data: dict | None = None) -> Path:
     output_dir = portfolio_output_dir(job_id)
     portfolio_data = normalize_portfolio_data(data) if data is not None else parse_resume(pdf_path)
+    profile_photo = find_profile_photo(job_id)
+    if profile_photo is not None:
+        shutil.copy2(profile_photo, output_dir / profile_photo.name)
+        portfolio_data["profile_image"] = profile_photo.name
+    else:
+        portfolio_data["profile_image"] = ""
     generate_site(portfolio_data, output_dir)
+    zip_portfolio(output_dir)
     return output_dir / "index.html"
+
+
+def zip_portfolio(output_dir: Path) -> Path:
+    archive_path = output_dir / PORTFOLIO_ZIP_NAME
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for item in sorted(output_dir.rglob("*")):
+            if item.is_dir() or item == archive_path:
+                continue
+            archive.write(item, arcname=item.relative_to(output_dir))
+    return archive_path
 
 
 def create_app() -> Flask:
@@ -288,9 +330,16 @@ def create_app() -> Flask:
 
         job_id = uuid4().hex
         saved_pdf = save_upload(job_id, filename, file_bytes)
+        photo_upload = request.files.get("profile_photo")
 
         try:
             parsed_data = parse_resume(saved_pdf)
+            if photo_upload and photo_upload.filename:
+                photo_bytes = photo_upload.read()
+                if not photo_bytes:
+                    raise ValueError("Uploaded profile photo is empty.")
+                saved_photo = save_profile_photo(job_id, photo_upload.filename, photo_bytes)
+                parsed_data["profile_image"] = saved_photo.name
             save_parsed_data(job_id, parsed_data)
         except Exception as exc:
             shutil.rmtree(uploads_root() / job_id, ignore_errors=True)
@@ -335,11 +384,13 @@ def create_app() -> Flask:
                 return jsonify({"error": f"Portfolio generation failed: {exc}"}), 500
 
             portfolio_url = f"{request.host_url}portfolios/{job_id}/index.html"
+            download_url = f"{request.host_url}portfolios/{job_id}/{PORTFOLIO_ZIP_NAME}"
             return (
                 jsonify(
                     {
                         "job_id": job_id,
                         "portfolio_url": portfolio_url,
+                        "download_url": download_url,
                         "index_path": str(index_file.relative_to(portfolios_root())),
                         "expires_in_hours": portfolio_ttl_hours(),
                     }
@@ -363,9 +414,16 @@ def create_app() -> Flask:
 
         job_id = uuid4().hex
         saved_pdf = save_upload(job_id, filename, file_bytes)
+        photo_upload = request.files.get("profile_photo")
 
         try:
             parsed_data = parse_resume(saved_pdf)
+            if photo_upload and photo_upload.filename:
+                photo_bytes = photo_upload.read()
+                if not photo_bytes:
+                    raise ValueError("Uploaded profile photo is empty.")
+                saved_photo = save_profile_photo(job_id, photo_upload.filename, photo_bytes)
+                parsed_data["profile_image"] = saved_photo.name
             save_parsed_data(job_id, parsed_data)
             index_file = generate_portfolio(job_id, data=parsed_data)
         except Exception as exc:
@@ -374,11 +432,13 @@ def create_app() -> Flask:
             return jsonify({"error": f"Portfolio generation failed: {exc}"}), 500
 
         portfolio_url = f"{request.host_url}portfolios/{job_id}/index.html"
+        download_url = f"{request.host_url}portfolios/{job_id}/{PORTFOLIO_ZIP_NAME}"
         return (
             jsonify(
                 {
                     "job_id": job_id,
                     "portfolio_url": portfolio_url,
+                    "download_url": download_url,
                     "index_path": str(index_file.relative_to(portfolios_root())),
                     "expires_in_hours": portfolio_ttl_hours(),
                 }
